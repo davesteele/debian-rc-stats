@@ -1,0 +1,74 @@
+#!/usr/bin/python3
+
+
+import json
+import datetime
+
+
+
+
+
+bugs = json.load(open('outbugs.json', 'r'))
+comments = json.load(open('comments.json', 'r'))
+
+STARTDATE = int(datetime.datetime(2014, 1, 1).timestamp())
+WEEK = 60*60*24*7
+NOW = int(datetime.datetime.now().timestamp())
+ENDDATE = NOW - WEEK
+
+jessie_freeze_start = int(datetime.datetime(2014, 11, 5).timestamp())
+jessie_freeze_end = int(datetime.datetime(2015, 4, 25).timestamp())
+
+stretch_freeze_start = int(datetime.datetime(2017, 1, 15).timestamp())
+stretch_freeze_end = int(datetime.datetime(2017, 6, 17).timestamp())
+
+
+
+
+
+def num_bugs(bugs, flag, start, end):
+    return len([x for x in bugs if x[flag] > start and x[flag] < end])
+
+def in_freeze(stamp):
+    if stamp > jessie_freeze_start and stamp < jessie_freeze_end:
+        return True
+
+    if stamp > stretch_freeze_start and stamp < stretch_freeze_end:
+        return True
+
+    return False
+
+print("timestamp, date, freeze, opened, closed, comments, version age median, version age 10%, bug age median")
+
+start = STARTDATE
+while start < ENDDATE:
+    end = start + WEEK
+
+    bugsweek = [x for x in bugs if x['date'] > start and x['date'] < end]
+    opened = len(bugsweek)
+    closed = len([x for x in bugs if 'closed' in x and x['closed'] > start and x['closed'] < end])
+    numcomm = len([x for x in comments if x['date'] > start and x['date'] < end])
+
+    ver_ages = [x['date'] - x['releasedate'] for x in bugsweek]
+    ver_ages_sort = sorted(ver_ages, key=lambda x: -x)
+    verage_med = 0
+    verage_ten = 0
+    if ver_ages_sort:
+        verage_med = ver_ages_sort[int(len(ver_ages_sort)/2)] / 86400
+        verage_ten = ver_ages_sort[int(len(ver_ages_sort)/10)] / 86400
+
+    bug_ages = [x['closed'] - x['date'] for x in bugsweek if 'closed' in x]
+    bug_ages = sorted(bug_ages)
+    med_bug_age = 0
+    if bug_ages:
+        med_bug_age = bug_ages[int(len(bug_ages)/2)] / 86400
+
+    print("%d, %s, %d, %d, %d, %d, %d, %d, %d" % (start, datetime.datetime.fromtimestamp(start).isoformat()[:10], in_freeze(start), opened, closed, numcomm, verage_ten, verage_med, med_bug_age))
+
+
+    start += WEEK
+
+
+
+
+

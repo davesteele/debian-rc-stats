@@ -1,0 +1,78 @@
+#!/usr/bin/python3
+
+import psycopg2.extensions
+from collections import namedtuple
+
+conn = psycopg2.connect("dbname=udd user=udd-mirror password=udd-mirror host=udd-mirror.debian.net")
+conn.set_client_encoding("UTF8")
+
+
+bugparams = """
+    id
+    package
+    source
+    arrival
+    status
+    severity
+    submitter
+    submitter_name
+    submitter_email
+    owner
+    owner_name
+    owner_email
+    done
+    done_name
+    done_email
+    title
+    last_modified
+    forwarded
+    affects_oldstable
+    affects_stable
+    affects_testing
+    affects_unstable
+    affects_experimental
+    affected_packages
+    affected_sources
+    """
+
+UddBug = namedtuple("UddBug", bugparams)
+
+
+cursor = conn.cursor()
+#cursor.execute("SELECT count(*) from packages where release='sid'")
+cursor.execute("SELECT %s from archived_bugs limit 10" % ', '.join(bugparams.split()))
+
+results = map(UddBug._make, cursor)
+
+
+for result in results:
+    result
+    print(result)
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT version from archived_bugs_found_in where id='%s'" % result.id)
+        for tag in cursor.fetchall():
+            print("    ", tag[0])
+
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT package, source from archived_bugs_packages where id='%s'" % result.id)
+        for tag in cursor.fetchall():
+            print("    " + tag[0] + ", " + tag[1])
+
+
+with conn.cursor() as cursor:
+    cursor.execute("select * from upload_history where source = 'gnome-gmail'")
+    for package in cursor:
+        print(package)
+
+
+with conn.cursor() as cursor:
+    cursor.execute("select * from upload_history_closes where source = 'gnome-gmail'")
+    for package in cursor:
+        print(package)
+
+
+with conn.cursor() as cursor:
+    cursor.execute("select * from migrations where source = 'gnome-gmail'")
+    for package in cursor:
+        print(package)
+

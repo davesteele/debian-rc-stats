@@ -1,0 +1,6 @@
+
+
+for dir in bts-spool-db bts-spool-archive ; do
+  mkdir -p btsspool/$dir
+  rsync --delete -avr rsync://bugs-mirror.debian.org/$dir btsspool/$dir
+done
